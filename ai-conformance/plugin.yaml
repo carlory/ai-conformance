@@ -1,0 +1,23 @@
+sonobuoy-config:
+  driver: Job
+  plugin-name: ai-conformance
+  result-format: gojson
+  source_url: https://raw.githubusercontent.com/carlory/sonobuoy-plugins/main/ai-conformance/plugin.yaml
+  description: Conformance test for AI workloads on Kubernetes, based on self-certification questionnaire template in https://github.com/cncf/ai-conformance.
+spec:
+  command:
+  - bash
+  args: ["-c","go tool test2json ./ai-conformance.test -test.v | tee ${SONOBUOY_RESULTS_DIR}/out.json ; echo ${SONOBUOY_RESULTS_DIR}/out.json > ${SONOBUOY_RESULTS_DIR}/done"]
+  image: ghcr.io/carlory/sonobuoy-plugins/ai-conformance:v0.1.0
+  imagePullPolicy: Always
+  env:
+  - name: NS_PREFIX
+    value: ai-conformance
+  - name: SONOBUOY_PROGRESS_PORT
+    value: "8099"
+  name: plugin
+  resources: {}
+  volumeMounts:
+  - mountPath: /tmp/sonobuoy/results
+    name: results
+
