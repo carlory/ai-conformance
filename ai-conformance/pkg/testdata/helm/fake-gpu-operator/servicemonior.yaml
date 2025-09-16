@@ -1,0 +1,17 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: nvidia-dcgm-exporter
+  namespace: gpu-operator
+  labels:
+    release: kube-prometheus-stack  # Must match Prometheus's .spec.serviceMonitorSelector.matchLabels
+spec:
+  selector:
+    matchLabels:
+      app: nvidia-dcgm-exporter      # Must match Service .spec.selector
+  namespaceSelector:
+    matchNames:
+      - gpu-operator                # Target namespace
+  endpoints:
+    - port: gpu-metrics             # Must match Service .spec.ports.name
+      interval: 30s                 # Match Prometheus scrape interval
