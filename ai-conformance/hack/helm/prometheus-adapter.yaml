@@ -1,0 +1,15 @@
+prometheus:
+  url: http://kube-prometheus-stack-prometheus.monitoring.svc
+rules:
+  default: true
+
+  custom:
+    - seriesQuery: 'vllm:num_requests_running'
+      resources:
+        overrides:
+          namespace: {resource: "namespace"}
+          pod: {resource: "pod"}
+      name:
+        matches: "vllm:num_requests_running"
+        as: "vllm_num_requests_running"
+      metricsQuery: sum(vllm:num_requests_running{<<.LabelMatchers>>}) by (<<.GroupBy>>)

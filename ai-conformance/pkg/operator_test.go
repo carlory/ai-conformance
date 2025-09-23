@@ -18,10 +18,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/dynamic"
-	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/kubectl/pkg/util/podutils"
 	"sigs.k8s.io/e2e-framework/klient/decoder"
 	"sigs.k8s.io/e2e-framework/klient/k8s"
@@ -32,10 +30,6 @@ import (
 	"sigs.k8s.io/e2e-framework/pkg/features"
 	"sigs.k8s.io/e2e-framework/third_party/helm"
 )
-
-func init() {
-	utilruntime.Must(apiextensionsv1.AddToScheme(clientgoscheme.Scheme))
-}
 
 // How we might test it: Deploy a representative AI operator, verify all Pods of the operator
 // and its webhook are Running and its CRDs are registered with the API server. Verify that
@@ -58,14 +52,6 @@ func TestRobustController(t *testing.T) {
 		WithLabel("id", "robust_controller").
 		WithLabel("level", "MUST").
 		Setup(func(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
-			// FIXME: remove this when all test case are added.
-			os.Setenv("https_proxy", "http://127.0.0.1:7897")
-			os.Setenv("http_proxy", "http://127.0.0.1:7897")
-			os.Setenv("all_proxy", "socks5://127.0.0.1:7897")
-			defer os.Unsetenv("https_proxy")
-			defer os.Unsetenv("http_proxy")
-			defer os.Unsetenv("all_proxy")
-
 			renderOpts := RenderOptions{
 				Name:        "kuberay-operator",
 				Namespace:   "kuberay-operator",

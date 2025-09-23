@@ -20,9 +20,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/sets"
-	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/e2e-framework/klient/decoder"
 	"sigs.k8s.io/e2e-framework/klient/k8s"
@@ -34,10 +32,6 @@ import (
 	podutils "sigs.k8s.io/karpenter/pkg/utils/pod"
 	kueuev1beta1 "sigs.k8s.io/kueue/apis/kueue/v1beta1"
 )
-
-func init() {
-	utilruntime.Must(kueuev1beta1.AddToScheme(clientgoscheme.Scheme))
-}
 
 func TestGangScheduling(t *testing.T) {
 	description := "The platform must allow for the installation and successful operation of at least one gang scheduling solution " +
