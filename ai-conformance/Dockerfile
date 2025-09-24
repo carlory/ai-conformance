@@ -23,4 +23,4 @@ WORKDIR /
 COPY --from=builder /src/e2e.test e2e.test
 COPY pkg/testdata testdata
 
-CMD ["bash", "-c", "go tool test2json ./e2e.test -test.v"]
+CMD ["bash", "-c", "./e2e.test -test.v"]

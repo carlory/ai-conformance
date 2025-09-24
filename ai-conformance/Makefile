@@ -33,6 +33,7 @@ SONOBUOY_VERSION ?= v0.57.3
 SONOBUOY_OUTPUT_DIR ?= /tmp/sonobuoy
 # Hydrophone E2E variables
 HYDROPHONE_VERSION ?= v0.7.0
+HYDROPHONE_OUTPUT_DIR ?= /tmp/hydrophone
 
 ## Tool Binaries
 KUBECTL ?= kubectl
@@ -100,7 +101,7 @@ generate-plugin:  sonobuoy ## Generate the Sonobuoy plugin yaml file
 		--image $(IMG) \
 		--cmd "bash" \
 		--arg "-c" \
-		--arg 'go tool test2json ./e2e.test -test.v | tee $${SONOBUOY_RESULTS_DIR}/out.json ; echo $${SONOBUOY_RESULTS_DIR}/out.json > $${SONOBUOY_RESULTS_DIR}/done' \
+		--arg './e2e.test -test.v | tee $${SONOBUOY_RESULTS_DIR}/e2e.log ; echo $${SONOBUOY_RESULTS_DIR}/e2e.log > $${SONOBUOY_RESULTS_DIR}/done' \
 		> $(SONOBUOY_PLUGIN_FILE)
 
 .PHONY: test-sonobuoy
@@ -114,6 +115,7 @@ HYDROPHONE = $(shell pwd)/bin/hydrophone
 hydrophone:
 	@GOBIN=$(PROJECT_DIR)/bin GO111MODULE=on go install sigs.k8s.io/hydrophone@${HYDROPHONE_VERSION}
 
+# FIXME: Migrate the current implementation to ginkgo, and generate e2e.log and junit_01.xml file for Hydrophone to download.
 .PHONY: test-hydrophone 
 test-hydrophone: hydrophone kind-image-build ## Run E2E tests for AI Conformance via Hydrophone
 	@echo "Running E2E tests for AI Conformance via Hydrophone"
