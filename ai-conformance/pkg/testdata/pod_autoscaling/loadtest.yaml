@@ -49,7 +49,7 @@ spec:
         - name: VUS
           value: "100"          # Number of concurrent users
         - name: DURATION
-          value: "2m"          # Load test duration
+          value: "3m"          # Load test duration
         - name: SLEEP
           value: "0.1"         # Pause time after each request
         - name: TARGET

@@ -16,7 +16,7 @@ spec:
         name: "vllm:num_requests_running"
       target:
         type: AverageValue
-        averageValue: "10"
+        averageValue: "2"
   behavior:
     scaleDown:
       stabilizationWindowSeconds: 60
