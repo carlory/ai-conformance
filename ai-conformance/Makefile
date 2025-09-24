@@ -27,13 +27,18 @@ KIND_CLUSTER_NAME ?= kind-ai-conformance
 E2E_KIND_NODE_VERSION ?= kindest/node:v1.34.0
 E2E_KIND_VERSION ?= v0.30.0
 USE_EXISTING_CLUSTER ?= false
+# Sonobuoy E2E variables
+SONOBUOY_PLUGIN_FILE ?= $(PROJECT_DIR)/plugin.yaml
+SONOBUOY_VERSION ?= v0.57.3
+SONOBUOY_OUTPUT_DIR ?= /tmp/sonobuoy
 
 ## Tool Binaries
 KUBECTL ?= kubectl
 HELM ?= helm
+JQ ?= jq
 
 .PHONY: all
-all: image-build
+all: build
 
 .PHONY: help
 help: ## Display this help.
@@ -63,7 +68,7 @@ kind:
 	@GOBIN=$(PROJECT_DIR)/bin GO111MODULE=on go install sigs.k8s.io/kind@${E2E_KIND_VERSION}
 
 .PHONY: kind-image-build
-kind-image-build: PLATFORMS=linux/arm64
+kind-image-build: PLATFORMS=linux/amd64
 kind-image-build: IMAGE_BUILD_EXTRA_OPTS=--load
 kind-image-build: kind image-build
 
@@ -71,8 +76,32 @@ kind-image-build: kind image-build
 .PHONY: test-e2e
 test-e2e: build kind
 	@echo "Running E2E tests for AI Conformance"
-	USE_EXISTING_CLUSTER=$(USE_EXISTING_CLUSTER) KIND=$(KIND) KIND_CLUSTER_NAME=$(KIND_CLUSTER_NAME) E2E_KIND_NODE_VERSION=$(E2E_KIND_NODE_VERSION) IMG=$(IMG) KUBECTL=$(KUBECTL) HELM=$(HELM) ./hack/e2e-test.sh
+	USE_EXISTING_CLUSTER=$(USE_EXISTING_CLUSTER) KIND=$(KIND) KIND_CLUSTER_NAME=$(KIND_CLUSTER_NAME) E2E_KIND_NODE_VERSION=$(E2E_KIND_NODE_VERSION) IMG=$(IMG) KUBECTL=$(KUBECTL) HELM=$(HELM) JQ=$(JQ) ./hack/e2e-test.sh
 
-test-sonobuoy:
+
+SONOBUOY = $(shell pwd)/bin/sonobuoy
+.PHONY: sonobuoy
+sonobuoy:
+	@GOBIN=$(PROJECT_DIR)/bin GO111MODULE=on go install github.com/vmware-tanzu/sonobuoy@${SONOBUOY_VERSION}
+
+
+.PHONY: generate-plugin
+generate-plugin:  sonobuoy ## Generate the Sonobuoy plugin yaml file
+	@echo "Generating Sonobuoy plugin yaml file"
+	@$(SONOBUOY) gen plugin --name ai-conformance \
+		--type Job \
+		--format raw \
+		--url https://raw.githubusercontent.com/carlory/sonobuoy-plugins/master/ai-conformance/plugin.yaml \
+		--description "Running E2E tests for AI Conformance via Sonobuoy to answer the self-certification questionnaire template in https://github.com/cncf/ai-conformance." \
+		--image $(IMG) \
+		--cmd "bash" \
+		--arg "-c" \
+		--arg 'go tool test2json ./e2e.test -test.v | tee $${SONOBUOY_RESULTS_DIR}/out.json ; echo $${SONOBUOY_RESULTS_DIR}/out.json > $${SONOBUOY_RESULTS_DIR}/done' \
+		> $(SONOBUOY_PLUGIN_FILE)
+
+test-sonobuoy: sonobuoy generate-plugin kind-image-build
 	@echo "Running E2E tests for AI Conformance via Sonobuoy"
+	USE_EXISTING_CLUSTER=$(USE_EXISTING_CLUSTER) KIND=$(KIND) KIND_CLUSTER_NAME=$(KIND_CLUSTER_NAME) E2E_KIND_NODE_VERSION=$(E2E_KIND_NODE_VERSION) IMG=$(IMG) KUBECTL=$(KUBECTL) HELM=$(HELM) SONOBUOY=$(SONOBUOY) SONOBUOY_PLUGIN_FILE=$(SONOBUOY_PLUGIN_FILE) OUTPUT_DIR=$(SONOBUOY_OUTPUT_DIR) JQ=$(JQ) ./hack/e2e-test.sh
 
+test-hydrophone:
+	@echo "Running E2E tests for AI Conformance via Hydrophone"

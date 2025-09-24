@@ -5,6 +5,9 @@ set -o nounset
 set -o pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+SONOBUOY_PLUGIN_FILE=${SONOBUOY_PLUGIN_FILE:-""}
+OUTPUT_DIR=${OUTPUT_DIR:-""}
+
 function cleanup {
     if [ "$USE_EXISTING_CLUSTER" == 'false' ]
     then
@@ -78,15 +81,48 @@ function install_dependencies {
               interval: 30s
 EOF
 }
+function run_e2e_tests {
+    echo "Starting E2E tests"
+    cd "$SCRIPT_DIR/../pkg" && ./e2e.test -test.v -kubeconfig "$HOME/.kube/config"
+    echo "Finished E2E tests"
+}
+function run_sonobuoy {
+    if [ "$USE_EXISTING_CLUSTER" == 'false' ]
+    then
+        kind_load
+    fi
+    echo "Starting Sonobuoy..."
+    $SONOBUOY run --plugin "$SONOBUOY_PLUGIN_FILE" --force-image-pull-policy --image-pull-policy IfNotPresent --kubeconfig "$HOME/.kube/config" --level debug --wait
+    if [ "$OUTPUT_DIR" != '' ]
+    then
+        echo "Retrieving Sonobuoy results..."
+        mkdir -p "$OUTPUT_DIR"
+        $SONOBUOY retrieve --kubeconfig "$HOME/.kube/config" "$OUTPUT_DIR"
+        
+        echo "Checking Sonobuoy status..."
+        failures=$($SONOBUOY status --kubeconfig "$HOME/.kube/config" --json | $JQ -c '.plugins[].progress.failures // []')
+        if [ "$failures" != "[]" ]; then
+            echo "❌ Test failures detected: $failures"
+            exit 1
+        else
+            echo "✅ All tests passed (no failures)"
+        fi
+
+    fi
+}
+function run {
+    if [ "$SONOBUOY_PLUGIN_FILE" != '' ]
+    then
+        run_sonobuoy
+    else
+        run_e2e_tests
+    fi
+}
 
 trap cleanup EXIT
 startup
-# kind_load
 install_dependencies
 
 # Wait for all the crds to be available.
 sleep 5
-
-echo "Starting E2E tests"
-cd "$SCRIPT_DIR/../pkg" && ./e2e.test -test.v -kubeconfig "$HOME/.kube/config"
-echo "Finished E2E tests"
+run
