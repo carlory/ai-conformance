@@ -14,7 +14,7 @@ WORKDIR /src
 COPY go.* /src
 ENV CGO_ENABLED=0
 RUN go mod download
-RUN go install github.com/jstemmer/go-junit-report/v2@latest
+RUN go install github.com/jstemmer/go-junit-report/v2@latest && go install helm.sh/helm/v3/cmd/helm@latest
 
 # Build the test binary
 RUN CGO_ENABLED=${CGO_ENABLED} GOOS=${TARGETOS} GOARCH=${TARGETARCH} go test -c -o e2e.test ./...
@@ -23,6 +23,7 @@ FROM ${BASE_IMAGE}
 WORKDIR /
 COPY --from=builder /src/e2e.test e2e.test
 COPY --from=builder /go/bin/go-junit-report /usr/local/bin/go-junit-report
+COPY --from=builder /go/bin/helm /usr/local/bin/helm
 COPY pkg/testdata testdata
 RUN mkdir -p /tmp/results
 
