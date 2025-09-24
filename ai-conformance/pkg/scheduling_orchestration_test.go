@@ -420,9 +420,6 @@ func TestPodAutoscaling(t *testing.T) {
 			return ctx
 		}).
 		AssessWithDescription("should scale up and down the workload based on the custom metrics", description, func(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
-			// FIXME: This is a workaround to wait for the custom metrics to be collected.
-			time.Sleep(1 * time.Minute)
-
 			r := cfg.Client().Resources()
 			workload := ctx.Value(AIWorkloadContextKey{}).(k8s.Object)
 			oldWorkload := workload.DeepCopyObject()
