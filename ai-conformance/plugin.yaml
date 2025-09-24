@@ -3,13 +3,15 @@ sonobuoy-config:
     questionnaire template in https://github.com/cncf/ai-conformance.
   driver: Job
   plugin-name: ai-conformance
-  result-format: raw
+  result-format: junit
   source-url: https://raw.githubusercontent.com/carlory/sonobuoy-plugins/master/ai-conformance/plugin.yaml
 spec:
   args:
   - -c
-  - ./e2e.test -test.v | tee ${SONOBUOY_RESULTS_DIR}/e2e.log ; echo ${SONOBUOY_RESULTS_DIR}/e2e.log
-    > ${SONOBUOY_RESULTS_DIR}/done
+  - ./e2e.test -test.v 2>&1 | tee ${SONOBUOY_RESULTS_DIR}/e2e.log && gotest2junit
+    < ${SONOBUOY_RESULTS_DIR}/e2e.log > ${SONOBUOY_RESULTS_DIR}/junit_01.xml ; echo
+    ${SONOBUOY_RESULTS_DIR}/e2e.log >> ${SONOBUOY_RESULTS_DIR}/done; echo ${SONOBUOY_RESULTS_DIR}/junit_01.xml
+    >> ${SONOBUOY_RESULTS_DIR}/done
   command:
   - bash
   image: ghcr.io/carlory/sonobuoy-plugins/ai-conformance:latest

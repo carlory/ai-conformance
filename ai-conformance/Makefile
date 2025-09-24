@@ -94,13 +94,13 @@ generate-plugin:  sonobuoy ## Generate the Sonobuoy plugin yaml file
 	@echo "Generating Sonobuoy plugin yaml file"
 	@$(SONOBUOY) gen plugin --name ai-conformance \
 		--type Job \
-		--format raw \
+		--format junit \
 		--url https://raw.githubusercontent.com/carlory/sonobuoy-plugins/master/ai-conformance/plugin.yaml \
 		--description "Running E2E tests for AI Conformance via Sonobuoy to answer the self-certification questionnaire template in https://github.com/cncf/ai-conformance." \
 		--image $(IMG) \
 		--cmd "bash" \
 		--arg "-c" \
-		--arg './e2e.test -test.v | tee $${SONOBUOY_RESULTS_DIR}/e2e.log ; echo $${SONOBUOY_RESULTS_DIR}/e2e.log > $${SONOBUOY_RESULTS_DIR}/done' \
+		--arg './e2e.test -test.v 2>&1 | tee $${SONOBUOY_RESULTS_DIR}/e2e.log && go-junit-report -set-exit-code < $${SONOBUOY_RESULTS_DIR}/e2e.log > $${SONOBUOY_RESULTS_DIR}/junit_01.xml ; echo $${SONOBUOY_RESULTS_DIR}/e2e.log >> $${SONOBUOY_RESULTS_DIR}/done; echo $${SONOBUOY_RESULTS_DIR}/junit_01.xml >> $${SONOBUOY_RESULTS_DIR}/done' \
 		> $(SONOBUOY_PLUGIN_FILE)
 
 .PHONY: test-sonobuoy
@@ -113,7 +113,7 @@ HYDROPHONE = $(shell pwd)/bin/hydrophone
 hydrophone:
 	@GOBIN=$(PROJECT_DIR)/bin GO111MODULE=on go install sigs.k8s.io/hydrophone@${HYDROPHONE_VERSION}
 
-# FIXME: Migrate the current implementation to ginkgo, and generate e2e.log and junit_01.xml file for Hydrophone to download.
+# FIXME: Migrate the current implementation to ginkgo in order to support other Hydrophone features.
 .PHONY: test-hydrophone 
 test-hydrophone: hydrophone kind-image-build ## Run E2E tests for AI Conformance via Hydrophone
 	@echo "Running E2E tests for AI Conformance via Hydrophone"
