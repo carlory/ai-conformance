@@ -2,6 +2,7 @@ package pkg
 
 import (
 	"context"
+	"flag"
 	"os"
 	"testing"
 
@@ -24,6 +25,10 @@ var testenv env.Environment
 
 func TestMain(m *testing.M) {
 	cfg, _ := envconf.NewFromFlags()
+	if v := flag.Lookup("kubeconfig"); v != nil {
+		// the kubeconfig flag will be already registered once kueue or karpenter is imported, so we need to set it manually.
+		cfg.WithKubeconfigFile(v.Value.String())
+	}
 	testenv = env.NewWithConfig(cfg)
 	namespace := "cncf-ai-conformance"
 
