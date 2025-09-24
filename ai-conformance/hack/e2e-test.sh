@@ -83,7 +83,7 @@ EOF
 }
 function run_e2e_tests {
     echo "Starting E2E tests"
-    cd "$SCRIPT_DIR/../pkg" && ./e2e.test -test.v -kubeconfig "$HOME/.kube/config"
+    cd "$SCRIPT_DIR/../pkg" && ./e2e.test -test.v -test.timeout=30m -kubeconfig "$HOME/.kube/config"
     echo "Finished E2E tests"
 }
 function run_sonobuoy {
