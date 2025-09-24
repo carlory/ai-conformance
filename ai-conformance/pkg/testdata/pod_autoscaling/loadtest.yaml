@@ -47,11 +47,11 @@ spec:
         command: ["k6", "run", "/scripts/script.js"]
         env:
         - name: VUS
-          value: "10000000"          # Number of concurrent users
+          value: "1000"          # Number of concurrent users
         - name: DURATION
           value: "3m"          # Load test duration
         - name: SLEEP
-          value: "0.0001"         # Pause time after each request
+          value: "0.1"         # Pause time after each request
         - name: TARGET
           value: "http://llm-d-inference-sim:8001"   # Load test target service
         - name: MODEL

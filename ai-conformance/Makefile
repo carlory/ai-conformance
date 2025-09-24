@@ -31,6 +31,8 @@ USE_EXISTING_CLUSTER ?= false
 SONOBUOY_PLUGIN_FILE ?= $(PROJECT_DIR)/plugin.yaml
 SONOBUOY_VERSION ?= v0.57.3
 SONOBUOY_OUTPUT_DIR ?= /tmp/sonobuoy
+# Hydrophone E2E variables
+HYDROPHONE_VERSION ?= v0.7.0
 
 ## Tool Binaries
 KUBECTL ?= kubectl
@@ -52,6 +54,7 @@ build: ## Build manager binary.
 
 .PHONY: image-build
 image-build: ## Build the image
+	@echo " build IMG: $(IMG)"
 	$(IMAGE_BUILD_CMD) -t $(IMG) \
 		--build-arg BASE_IMAGE=$(BASE_IMAGE) \
 		--build-arg BUILDER_IMAGE=$(BUILDER_IMAGE) \
@@ -88,6 +91,7 @@ sonobuoy:
 .PHONY: generate-plugin
 generate-plugin:  sonobuoy ## Generate the Sonobuoy plugin yaml file
 	@echo "Generating Sonobuoy plugin yaml file"
+	@echo "IMG: $(IMG)"
 	@$(SONOBUOY) gen plugin --name ai-conformance \
 		--type Job \
 		--format raw \
@@ -99,9 +103,15 @@ generate-plugin:  sonobuoy ## Generate the Sonobuoy plugin yaml file
 		--arg 'go tool test2json ./e2e.test -test.v | tee $${SONOBUOY_RESULTS_DIR}/out.json ; echo $${SONOBUOY_RESULTS_DIR}/out.json > $${SONOBUOY_RESULTS_DIR}/done' \
 		> $(SONOBUOY_PLUGIN_FILE)
 
-test-sonobuoy: sonobuoy generate-plugin kind-image-build
+test-sonobuoy: sonobuoy kind-image-build generate-plugin
 	@echo "Running E2E tests for AI Conformance via Sonobuoy"
 	USE_EXISTING_CLUSTER=$(USE_EXISTING_CLUSTER) KIND=$(KIND) KIND_CLUSTER_NAME=$(KIND_CLUSTER_NAME) E2E_KIND_NODE_VERSION=$(E2E_KIND_NODE_VERSION) IMG=$(IMG) KUBECTL=$(KUBECTL) HELM=$(HELM) SONOBUOY=$(SONOBUOY) SONOBUOY_PLUGIN_FILE=$(SONOBUOY_PLUGIN_FILE) OUTPUT_DIR=$(SONOBUOY_OUTPUT_DIR) JQ=$(JQ) ./hack/e2e-test.sh
+	@(rm $(SONOBUOY_PLUGIN_FILE) || true)
+
+HYDROPHONE = $(shell pwd)/bin/hydrophone
+.PHONY: hydrophone
+hydrophone:
+	@GOBIN=$(PROJECT_DIR)/bin GO111MODULE=on go install sigs.k8s.io/hydrophone@latest@${HYDROPHONE_VERSION}
 
 test-hydrophone:
 	@echo "Running E2E tests for AI Conformance via Hydrophone"
