@@ -1,0 +1,17 @@
+sonobuoy-config:
+  description: Running E2E tests for AI Conformance via Sonobuoy to answer the self-certification
+    questionnaire template in https://github.com/cncf/ai-conformance.
+  driver: Job
+  plugin-name: ai-conformance
+  result-format: raw
+  source-url: https://raw.githubusercontent.com/carlory/sonobuoy-plugins/master/ai-conformance/plugin.yaml
+spec:
+  args:
+  - -c
+  - ./e2e.test -test.v | tee ${SONOBUOY_RESULTS_DIR}/e2e.log ; echo ${SONOBUOY_RESULTS_DIR}/e2e.log
+    > ${SONOBUOY_RESULTS_DIR}/done
+  command:
+  - bash
+  image: ghcr.io/carlory/sonobuoy-plugins/ai-conformance:latest
+  name: plugin
+

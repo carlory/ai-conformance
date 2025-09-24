@@ -36,3 +36,8 @@ jobs:
         working-directory: ai-conformance
         run: |
           make test-e2e
+      
+      - name: Build and push image
+        working-directory: ai-conformance
+        run: |
+          make image-push

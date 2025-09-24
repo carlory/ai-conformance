@@ -16,7 +16,8 @@ IMAGE_BUILD_EXTRA_OPTS ?=
 IMAGE_REGISTRY ?= ghcr.io/carlory/sonobuoy-plugins
 IMAGE_NAME ?= ai-conformance
 IMAGE_REPO := $(IMAGE_REGISTRY)/$(IMAGE_NAME)
-GIT_TAG ?= $(shell git describe --tags --dirty --always)
+# GIT_TAG ?= $(shell git describe --tags --dirty --always)
+GIT_TAG ?= latest
 GOPROXY=${GOPROXY:-""}
 IMG ?= $(IMAGE_REPO):$(GIT_TAG)
 BUILDER_IMAGE ?= golang:$(GO_VERSION)
@@ -55,7 +56,6 @@ build: ## Build manager binary.
 
 .PHONY: image-build
 image-build: ## Build the image
-	@echo " build IMG: $(IMG)"
 	$(IMAGE_BUILD_CMD) -t $(IMG) \
 		--build-arg BASE_IMAGE=$(BASE_IMAGE) \
 		--build-arg BUILDER_IMAGE=$(BUILDER_IMAGE) \
@@ -92,7 +92,6 @@ sonobuoy:
 .PHONY: generate-plugin
 generate-plugin:  sonobuoy ## Generate the Sonobuoy plugin yaml file
 	@echo "Generating Sonobuoy plugin yaml file"
-	@echo "IMG: $(IMG)"
 	@$(SONOBUOY) gen plugin --name ai-conformance \
 		--type Job \
 		--format raw \
@@ -108,7 +107,6 @@ generate-plugin:  sonobuoy ## Generate the Sonobuoy plugin yaml file
 test-sonobuoy: sonobuoy kind-image-build generate-plugin ## Run E2E tests for AI Conformance via Sonobuoy
 	@echo "Running E2E tests for AI Conformance via Sonobuoy"
 	E2E_TEST_RUNNER="sonobuoy" USE_EXISTING_CLUSTER=$(USE_EXISTING_CLUSTER) KIND=$(KIND) KIND_CLUSTER_NAME=$(KIND_CLUSTER_NAME) E2E_KIND_NODE_VERSION=$(E2E_KIND_NODE_VERSION) IMG=$(IMG) KUBECTL=$(KUBECTL) HELM=$(HELM) SONOBUOY=$(SONOBUOY) SONOBUOY_PLUGIN_FILE=$(SONOBUOY_PLUGIN_FILE) OUTPUT_DIR=$(SONOBUOY_OUTPUT_DIR) JQ=$(JQ) ./hack/e2e-test.sh
-	@(rm $(SONOBUOY_PLUGIN_FILE) || true)
 
 HYDROPHONE = $(shell pwd)/bin/hydrophone
 .PHONY: hydrophone
