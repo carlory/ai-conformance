@@ -110,13 +110,26 @@ function run_sonobuoy {
 
     fi
 }
+function run_hydrophone {
+    echo "Starting Hydrophone..."
+    hydrophone
+}
 function run {
-    if [ "$SONOBUOY_PLUGIN_FILE" != '' ]
-    then
-        run_sonobuoy
-    else
-        run_e2e_tests
-    fi
+    case "$E2E_TEST_RUNNER" in
+        ""|"binary")
+            run_e2e_tests
+            ;;
+        "sonobuoy")
+            run_sonobuoy
+            ;;
+        "hydrophone")
+            run_hydrophone
+            ;;
+        *)
+            echo "❌ Invalid E2E test runner: $E2E_TEST_RUNNER"
+            exit 1
+            ;;
+    esac
 }
 
 trap cleanup EXIT
