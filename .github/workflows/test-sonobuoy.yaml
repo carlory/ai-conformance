@@ -33,7 +33,6 @@ jobs:
         uses: azure/setup-helm@v4
 
       - name: Run E2E tests via Sonobuoy
-        working-directory: ai-conformance
         run: |
           make test-sonobuoy
 

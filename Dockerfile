@@ -25,6 +25,6 @@ COPY --from=builder /src/e2e.test e2e.test
 COPY --from=builder /go/bin/go-junit-report /usr/local/bin/go-junit-report
 COPY --from=builder /go/bin/helm /usr/local/bin/helm
 COPY pkg/testdata testdata
-RUN mkdir -p /tmp/results
+RUN mkdir -p /tmp/results && chmod a+x /usr/local/bin/go-junit-report && chmod a+x /usr/local/bin/helm
 
-CMD ["bash", "-c", "./e2e.test -test.v 2>&1 | tee /tmp/results/e2e.log && /go-junit-report -set-exit-code < /tmp/results/e2e.log > /tmp/results/junit_01.xml"]
+CMD ["bash", "-c", "./e2e.test -test.v 2>&1 | tee /tmp/results/e2e.log && go-junit-report -set-exit-code < /tmp/results/e2e.log > /tmp/results/junit_01.xml"]

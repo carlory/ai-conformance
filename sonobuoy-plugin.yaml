@@ -14,6 +14,6 @@ spec:
     >> ${SONOBUOY_RESULTS_DIR}/done
   command:
   - bash
-  image: ghcr.io/carlory/sonobuoy-plugins/ai-conformance:latest
+  image: ghcr.io/carlory/ai-conformance:latest
   name: plugin
 

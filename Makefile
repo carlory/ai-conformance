@@ -13,7 +13,7 @@ BASE_IMAGE ?= golang:$(GO_VERSION)
 DOCKER_BUILDX_CMD ?= docker buildx
 IMAGE_BUILD_CMD ?= $(DOCKER_BUILDX_CMD) build
 IMAGE_BUILD_EXTRA_OPTS ?=
-IMAGE_REGISTRY ?= ghcr.io/carlory/sonobuoy-plugins
+IMAGE_REGISTRY ?= ghcr.io/carlory
 IMAGE_NAME ?= ai-conformance
 IMAGE_REPO := $(IMAGE_REGISTRY)/$(IMAGE_NAME)
 # GIT_TAG ?= $(shell git describe --tags --dirty --always)
@@ -29,7 +29,7 @@ E2E_KIND_NODE_VERSION ?= kindest/node:v1.34.0
 E2E_KIND_VERSION ?= v0.30.0
 USE_EXISTING_CLUSTER ?= false
 # Sonobuoy E2E variables
-SONOBUOY_PLUGIN_FILE ?= $(PROJECT_DIR)/plugin.yaml
+SONOBUOY_PLUGIN_FILE ?= $(PROJECT_DIR)/sonobuoy-plugin.yaml
 SONOBUOY_VERSION ?= v0.57.3
 SONOBUOY_OUTPUT_DIR ?= /tmp/sonobuoy
 # Hydrophone E2E variables

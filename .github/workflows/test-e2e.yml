@@ -33,11 +33,12 @@ jobs:
         uses: azure/setup-helm@v4
 
       - name: Run E2E tests
-        working-directory: ai-conformance
         run: |
           make test-e2e
-      
+      - name: Log in to GitHub Container Registry
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
       - name: Build and push image
-        working-directory: ai-conformance
         run: |
           make image-push
