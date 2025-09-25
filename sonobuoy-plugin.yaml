@@ -8,12 +8,17 @@ sonobuoy-config:
 spec:
   args:
   - -c
-  - ./e2e.test -test.v 2>&1 | tee ${SONOBUOY_RESULTS_DIR}/e2e.log && gotest2junit
-    < ${SONOBUOY_RESULTS_DIR}/e2e.log > ${SONOBUOY_RESULTS_DIR}/junit_01.xml ; echo
-    ${SONOBUOY_RESULTS_DIR}/e2e.log >> ${SONOBUOY_RESULTS_DIR}/done; echo ${SONOBUOY_RESULTS_DIR}/junit_01.xml
-    >> ${SONOBUOY_RESULTS_DIR}/done
+  - sleep 5; ginkgo -v run /usr/local/bin/e2e.test -- --progress-report-url=http://localhost:8099/progress
+    | tee $RESULTS_DIR/e2e.log ; tar -czf $RESULTS_DIR/e2e.tar.gz -C $RESULTS_DIR
+    e2e.log -C $ARTIFACTS junit_01.xml; echo $RESULTS_DIR/e2e.tar.gz > $RESULTS_DIR/done;
+    sleep 5
   command:
   - bash
+  env:
+  - name: RESULTS_DIR
+    value: /tmp/sonobuoy/results
+  - name: ARTIFACTS
+    value: /tmp/sonobuoy/results
   image: ghcr.io/carlory/ai-conformance:latest
   name: plugin
 

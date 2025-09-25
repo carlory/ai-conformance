@@ -28,13 +28,13 @@ KIND_CLUSTER_NAME ?= kind-ai-conformance
 E2E_KIND_NODE_VERSION ?= kindest/node:v1.34.0
 E2E_KIND_VERSION ?= v0.30.0
 USE_EXISTING_CLUSTER ?= false
+GINKGO_VERSION ?= v2.25.3
+E2E_RESULTS_DIR ?= /tmp/results
 # Sonobuoy E2E variables
 SONOBUOY_PLUGIN_FILE ?= $(PROJECT_DIR)/sonobuoy-plugin.yaml
 SONOBUOY_VERSION ?= v0.57.3
-SONOBUOY_OUTPUT_DIR ?= /tmp/sonobuoy
 # Hydrophone E2E variables
 HYDROPHONE_VERSION ?= v0.7.0
-HYDROPHONE_OUTPUT_DIR ?= /tmp/hydrophone
 
 ## Tool Binaries
 KUBECTL ?= kubectl
@@ -52,7 +52,7 @@ help: ## Display this help.
 
 .PHONY: build
 build: ## Build manager binary.
-	CGO_ENABLED=${CGO_ENABLED} GOOS=${TARGETOS} GOARCH=${TARGETARCH} go test -c -o ./pkg/e2e.test ./pkg
+	CGO_ENABLED=${CGO_ENABLED} GOOS=${TARGETOS} GOARCH=${TARGETARCH} go test -c -o e2e.test ./e2e
 
 .PHONY: image-build
 image-build: ## Build the image
@@ -77,10 +77,15 @@ kind-image-build: IMAGE_BUILD_EXTRA_OPTS=--load
 kind-image-build: kind image-build
 
 ##@ Test
+GINKGO = $(shell pwd)/bin/ginkgo
+.PHONY: ginkgo
+ginkgo:
+	@GOBIN=$(PROJECT_DIR)/bin GO111MODULE=on go install github.com/onsi/ginkgo/v2/ginkgo@$(GINKGO_VERSION)
+
 .PHONY: test-e2e
-test-e2e: build kind
+test-e2e: kind
 	@echo "Running E2E tests for AI Conformance"
-	E2E_TEST_RUNNER=$(E2E_TEST_RUNNER) USE_EXISTING_CLUSTER=$(USE_EXISTING_CLUSTER) KIND=$(KIND) KIND_CLUSTER_NAME=$(KIND_CLUSTER_NAME) E2E_KIND_NODE_VERSION=$(E2E_KIND_NODE_VERSION) IMG=$(IMG) KUBECTL=$(KUBECTL) HELM=$(HELM) JQ=$(JQ) ./hack/e2e-test.sh
+	GINKGO=$(GINKGO) E2E_TEST_RUNNER=$(E2E_TEST_RUNNER) USE_EXISTING_CLUSTER=$(USE_EXISTING_CLUSTER) KIND=$(KIND) KIND_CLUSTER_NAME=$(KIND_CLUSTER_NAME) E2E_KIND_NODE_VERSION=$(E2E_KIND_NODE_VERSION) IMG=$(IMG) KUBECTL=$(KUBECTL) HELM=$(HELM) JQ=$(JQ) ./hack/e2e-test.sh
 
 
 SONOBUOY = $(shell pwd)/bin/sonobuoy
@@ -97,16 +102,18 @@ generate-plugin:  sonobuoy ## Generate the Sonobuoy plugin yaml file
 		--format junit \
 		--url https://raw.githubusercontent.com/carlory/sonobuoy-plugins/master/ai-conformance/plugin.yaml \
 		--description "Running E2E tests for AI Conformance via Sonobuoy to answer the self-certification questionnaire template in https://github.com/cncf/ai-conformance." \
-		--image $(IMG) \
 		--cmd "bash" \
 		--arg "-c" \
-		--arg './e2e.test -test.v 2>&1 | tee $${SONOBUOY_RESULTS_DIR}/e2e.log && go-junit-report -set-exit-code < $${SONOBUOY_RESULTS_DIR}/e2e.log > $${SONOBUOY_RESULTS_DIR}/junit_01.xml ; echo $${SONOBUOY_RESULTS_DIR}/e2e.log >> $${SONOBUOY_RESULTS_DIR}/done; echo $${SONOBUOY_RESULTS_DIR}/junit_01.xml >> $${SONOBUOY_RESULTS_DIR}/done' \
+		--arg 'sleep 5; ginkgo -v run /usr/local/bin/e2e.test -- --progress-report-url=http://localhost:8099/progress | tee $$RESULTS_DIR/e2e.log ; tar -czf $$RESULTS_DIR/e2e.tar.gz -C $$RESULTS_DIR e2e.log -C $$ARTIFACTS junit_01.xml; echo $$RESULTS_DIR/e2e.tar.gz > $$RESULTS_DIR/done; sleep 5' \
+		--env "RESULTS_DIR=/tmp/sonobuoy/results" \
+		--env "ARTIFACTS=/tmp/sonobuoy/results" \
+		--image $(IMG) \
 		> $(SONOBUOY_PLUGIN_FILE)
 
 .PHONY: test-sonobuoy
 test-sonobuoy: sonobuoy kind-image-build generate-plugin ## Run E2E tests for AI Conformance via Sonobuoy
 	@echo "Running E2E tests for AI Conformance via Sonobuoy"
-	E2E_TEST_RUNNER="sonobuoy" USE_EXISTING_CLUSTER=$(USE_EXISTING_CLUSTER) KIND=$(KIND) KIND_CLUSTER_NAME=$(KIND_CLUSTER_NAME) E2E_KIND_NODE_VERSION=$(E2E_KIND_NODE_VERSION) IMG=$(IMG) KUBECTL=$(KUBECTL) HELM=$(HELM) SONOBUOY=$(SONOBUOY) SONOBUOY_PLUGIN_FILE=$(SONOBUOY_PLUGIN_FILE) OUTPUT_DIR=$(SONOBUOY_OUTPUT_DIR) JQ=$(JQ) ./hack/e2e-test.sh
+	E2E_TEST_RUNNER="sonobuoy" USE_EXISTING_CLUSTER=$(USE_EXISTING_CLUSTER) KIND=$(KIND) KIND_CLUSTER_NAME=$(KIND_CLUSTER_NAME) E2E_KIND_NODE_VERSION=$(E2E_KIND_NODE_VERSION) IMG=$(IMG) KUBECTL=$(KUBECTL) HELM=$(HELM) SONOBUOY=$(SONOBUOY) SONOBUOY_PLUGIN_FILE=$(SONOBUOY_PLUGIN_FILE) E2E_RESULTS_DIR=$(E2E_RESULTS_DIR) JQ=$(JQ) ./hack/e2e-test.sh
 
 HYDROPHONE = $(shell pwd)/bin/hydrophone
 .PHONY: hydrophone
@@ -115,6 +122,6 @@ hydrophone:
 
 # FIXME: Migrate the current implementation to ginkgo in order to support other Hydrophone features.
 .PHONY: test-hydrophone 
-test-hydrophone: hydrophone kind-image-build ## Run E2E tests for AI Conformance via Hydrophone
+test-hydrophone: hydrophone # kind-image-build ## Run E2E tests for AI Conformance via Hydrophone
 	@echo "Running E2E tests for AI Conformance via Hydrophone"
-	E2E_TEST_RUNNER="hydrophone" USE_EXISTING_CLUSTER=$(USE_EXISTING_CLUSTER) KIND=$(KIND) KIND_CLUSTER_NAME=$(KIND_CLUSTER_NAME) E2E_KIND_NODE_VERSION=$(E2E_KIND_NODE_VERSION) IMG=$(IMG) KUBECTL=$(KUBECTL) HELM=$(HELM) HYDROPHONE=$(HYDROPHONE) JQ=$(JQ) ./hack/e2e-test.sh
+	E2E_TEST_RUNNER="hydrophone" USE_EXISTING_CLUSTER=$(USE_EXISTING_CLUSTER) KIND=$(KIND) KIND_CLUSTER_NAME=$(KIND_CLUSTER_NAME) E2E_KIND_NODE_VERSION=$(E2E_KIND_NODE_VERSION) IMG=$(IMG) KUBECTL=$(KUBECTL) HELM=$(HELM) HYDROPHONE=$(HYDROPHONE) JQ=$(JQ) E2E_RESULTS_DIR=$(E2E_RESULTS_DIR) ./hack/e2e-test.sh

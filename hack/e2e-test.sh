@@ -6,7 +6,7 @@ set -o pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 SONOBUOY_PLUGIN_FILE=${SONOBUOY_PLUGIN_FILE:-""}
-OUTPUT_DIR=${OUTPUT_DIR:-""}
+E2E_RESULTS_DIR=${E2E_RESULTS_DIR:-""}
 
 function cleanup {
     if [ "$USE_EXISTING_CLUSTER" == 'false' ]
@@ -83,7 +83,7 @@ EOF
 }
 function run_e2e_tests {
     echo "Starting E2E tests"
-    cd "$SCRIPT_DIR/../pkg" && ./e2e.test -test.v -test.timeout=30m -kubeconfig "$HOME/.kube/config"
+    ARTIFACTS="$SCRIPT_DIR/../" $GINKGO -v run "$SCRIPT_DIR/../e2e/..."
     echo "Finished E2E tests"
 }
 function run_sonobuoy {
@@ -93,11 +93,11 @@ function run_sonobuoy {
     fi
     echo "Starting Sonobuoy..."
     $SONOBUOY run --plugin "$SONOBUOY_PLUGIN_FILE" --force-image-pull-policy --image-pull-policy IfNotPresent --kubeconfig "$HOME/.kube/config" --level debug --wait
-    if [ "$OUTPUT_DIR" != '' ]
+    if [ "$E2E_RESULTS_DIR" != '' ]
     then
         echo "Retrieving Sonobuoy results..."
-        mkdir -p "$OUTPUT_DIR"
-        $SONOBUOY retrieve --kubeconfig "$HOME/.kube/config" "$OUTPUT_DIR"
+        mkdir -p "$E2E_RESULTS_DIR"
+        $SONOBUOY retrieve --kubeconfig "$HOME/.kube/config" "$E2E_RESULTS_DIR"
         
         echo "Checking Sonobuoy status..."
         failures=$($SONOBUOY status --kubeconfig "$HOME/.kube/config" --json | $JQ -c '.plugins[].progress.failures // []')
@@ -112,7 +112,12 @@ function run_sonobuoy {
 }
 function run_hydrophone {
     echo "Starting Hydrophone..."
-    hydrophone
+    if [ "$USE_EXISTING_CLUSTER" == 'false' ]
+    then
+        kind_load
+    fi
+    mkdir -p "$E2E_RESULTS_DIR"
+    $HYDROPHONE --conformance-image "$IMG" --output-dir "$E2E_RESULTS_DIR"
 }
 function run {
     case "$E2E_TEST_RUNNER" in

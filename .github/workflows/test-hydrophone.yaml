@@ -1,4 +1,4 @@
-name: "Running E2E tests for AI Conformance via Sonobuoy"
+name: "Running E2E tests for AI Conformance via Hydrophone"
 
 on:
   push:
@@ -32,14 +32,14 @@ jobs:
       - name: Set up Helm
         uses: azure/setup-helm@v4
 
-      - name: Run E2E tests via Sonobuoy
+      - name: Run E2E tests via hydrophone
         run: |
-          make test-sonobuoy
+          make test-hydrophone
 
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: test-sonobuoy-results
+          name: test-hydrophone-results
           path: /tmp/results
           retention-days: 1

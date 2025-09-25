@@ -30,7 +30,8 @@ go.work.sum
 
 # tmp files
 results/
-e2e
+junit_*.xml
+e2e.log
 
 # Editor/IDE
 # .idea/
