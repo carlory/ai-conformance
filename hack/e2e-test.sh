@@ -83,7 +83,7 @@ EOF
 }
 function run_e2e_tests {
     echo "Starting E2E tests"
-    ARTIFACTS="$SCRIPT_DIR/../" $GINKGO -v --focus="$GINKGO_FOCUS" --skip="$GINKGO_SKIP" "$SCRIPT_DIR/../e2e" -- --kubeconfig "$HOME/.kube/config"
+    ARTIFACTS="$SCRIPT_DIR/../" $GINKGO -v --procs=1 --focus="$GINKGO_FOCUS" --skip="$GINKGO_SKIP" "$SCRIPT_DIR/../e2e" -- --kubeconfig "$HOME/.kube/config"
     echo "Finished E2E tests"
 }
 function run_sonobuoy {

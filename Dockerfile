@@ -16,7 +16,7 @@ RUN go mod download
 COPY e2e e2e
 
 # Build
-RUN go test -x -c -o e2e.test /workspace/e2e
+RUN go test -c -o e2e.test /workspace/e2e
 
 ## Install Helm
 RUN curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash

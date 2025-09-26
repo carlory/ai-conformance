@@ -15,7 +15,7 @@ var _ = WGDescribe("DRA Support", func() {
 
 	/*
 		Release: v1.34
-		Testname: Dynamic Resource Allocation (DRA) Support
+		Testname: Dynamic Resource Allocation (DRA) API Group
 		Description: Support Dynamic Resource Allocation (DRA) APIs to enable more flexible and fine-grained resource requests beyond simple counts.
 	*/
 	frameworkutil.AIConformanceIt("should support DRA", func(ctx context.Context) {
