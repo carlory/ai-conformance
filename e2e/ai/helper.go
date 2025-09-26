@@ -1,4 +1,4 @@
-package e2e
+package ai
 
 import (
 	"context"
@@ -9,12 +9,10 @@ import (
 	"net/url"
 
 	"k8s.io/client-go/rest"
-	"sigs.k8s.io/e2e-framework/pkg/envconf"
 )
 
 type PrometheusQueryParams struct {
 	RestClient            rest.Interface
-	Config                *envconf.Config
 	PrometheusURL         string
 	PrometheusmNamespace  string
 	PrometheusServiceName string

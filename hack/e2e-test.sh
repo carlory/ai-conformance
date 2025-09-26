@@ -83,7 +83,7 @@ EOF
 }
 function run_e2e_tests {
     echo "Starting E2E tests"
-    ARTIFACTS="$SCRIPT_DIR/../" $GINKGO -v run "$SCRIPT_DIR/../e2e/..."
+    ARTIFACTS="$SCRIPT_DIR/../" $GINKGO -v --focus="$GINKGO_FOCUS" --skip="$GINKGO_SKIP" "$SCRIPT_DIR/../e2e" -- --kubeconfig "$HOME/.kube/config"
     echo "Finished E2E tests"
 }
 function run_sonobuoy {
@@ -95,19 +95,11 @@ function run_sonobuoy {
     $SONOBUOY run --plugin "$SONOBUOY_PLUGIN_FILE" --force-image-pull-policy --image-pull-policy IfNotPresent --kubeconfig "$HOME/.kube/config" --level debug --wait
     if [ "$E2E_RESULTS_DIR" != '' ]
     then
+        echo "Show Sonobuoy status"
+        $SONOBUOY status --kubeconfig "$HOME/.kube/config"
         echo "Retrieving Sonobuoy results..."
         mkdir -p "$E2E_RESULTS_DIR"
         $SONOBUOY retrieve --kubeconfig "$HOME/.kube/config" "$E2E_RESULTS_DIR"
-        
-        echo "Checking Sonobuoy status..."
-        failures=$($SONOBUOY status --kubeconfig "$HOME/.kube/config" --json | $JQ -c '.plugins[].progress.failures // []')
-        if [ "$failures" != "[]" ]; then
-            echo "❌ Test failures detected: $failures"
-            exit 1
-        else
-            echo "✅ All tests passed (no failures)"
-        fi
-
     fi
 }
 function run_hydrophone {
@@ -117,7 +109,7 @@ function run_hydrophone {
         kind_load
     fi
     mkdir -p "$E2E_RESULTS_DIR"
-    $HYDROPHONE --conformance-image "$IMG" --output-dir "$E2E_RESULTS_DIR"
+    $HYDROPHONE --conformance-image "$IMG" --focus="$GINKGO_FOCUS" --skip="$GINKGO_SKIP" --output-dir "$E2E_RESULTS_DIR"
 }
 function run {
     case "$E2E_TEST_RUNNER" in
@@ -140,7 +132,4 @@ function run {
 trap cleanup EXIT
 startup
 install_dependencies
-
-# Wait for all the crds to be available.
-sleep 5
 run

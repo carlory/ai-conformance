@@ -1,3 +1,17 @@
+podSpec:
+  containers: []
+  nodeSelector:
+    kubernetes.io/os: linux
+  restartPolicy: Never
+  serviceAccountName: sonobuoy-serviceaccount
+  tolerations:
+  - effect: NoSchedule
+    key: node-role.kubernetes.io/master
+    operator: Exists
+  - key: CriticalAddonsOnly
+    operator: Exists
+  - key: kubernetes.io/e2e-evict-taint-key
+    operator: Exists
 sonobuoy-config:
   description: Running E2E tests for AI Conformance via Sonobuoy to answer the self-certification
     questionnaire template in https://github.com/cncf/ai-conformance.
@@ -6,19 +20,21 @@ sonobuoy-config:
   result-format: junit
   source-url: https://raw.githubusercontent.com/carlory/sonobuoy-plugins/master/ai-conformance/plugin.yaml
 spec:
-  args:
-  - -c
-  - sleep 5; ginkgo -v run /usr/local/bin/e2e.test -- --progress-report-url=http://localhost:8099/progress
-    | tee $RESULTS_DIR/e2e.log ; tar -czf $RESULTS_DIR/e2e.tar.gz -C $RESULTS_DIR
-    e2e.log -C $ARTIFACTS junit_01.xml; echo $RESULTS_DIR/e2e.tar.gz > $RESULTS_DIR/done;
-    sleep 5
   command:
-  - bash
+  - kubeconformance
   env:
+  - name: E2E_USE_GO_RUNNER
+    value: '"true"'
   - name: RESULTS_DIR
     value: /tmp/sonobuoy/results
-  - name: ARTIFACTS
-    value: /tmp/sonobuoy/results
+  - name: E2E_EXTRA_ARGS
+    value: --progress-report-url=http://localhost:8099/progress
+  - name: E2E_FOCUS
+    value: \[AIConformance\]
+  - name: E2E_PARALLEL
+    value: '"false"'
+  - name: E2E_SKIP
+    value: \[Disruptive\]|NoExecuteTaintManager
   image: ghcr.io/carlory/ai-conformance:latest
   name: plugin
 

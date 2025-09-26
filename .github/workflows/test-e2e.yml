@@ -31,6 +31,15 @@ jobs:
       - name: Run E2E tests
         run: |
           make test-e2e
+
+      - name: Run E2E tests via hydrophone
+        run: |
+          make test-hydrophone
+
+      - name: Run E2E tests via Sonobuoy
+        run: |
+          make test-sonobuoy
+
       - name: Log in to GitHub Container Registry
         run: |
           echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin

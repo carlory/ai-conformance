@@ -1,9 +1,8 @@
-package e2e
+package ai
 
 import (
 	"context"
 
-	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"
 	"github.com/onsi/gomega/gstruct"
 	apiextv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -11,9 +10,11 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/kubernetes/test/e2e/framework"
+
+	frameworkutil "github.com/carlory/ai-conformance/e2e/util/framework"
 )
 
-var _ = ginkgo.Describe("AI Inference", func() {
+var _ = WGDescribe("AI Inference", func() {
 	f := framework.NewDefaultFramework("ai-inference")
 	f.SkipNamespaceCreation = true
 
@@ -24,7 +25,7 @@ var _ = ginkgo.Describe("AI Inference", func() {
 		for inference services, which enables capabilities like weighted traffic splitting, header-based routing
 		(for OpenAI protocol headers), and optional integration with service meshes.
 	*/
-	framework.ConformanceIt("gateway crds should be available", func(ctx context.Context) {
+	frameworkutil.AIConformanceIt("gateway crds should be available", func(ctx context.Context) {
 		apiExtensionClient, err := apiextclientset.NewForConfig(f.ClientConfig())
 		framework.ExpectNoError(err)
 

@@ -1,15 +1,16 @@
-package e2e
+package ai
 
 import (
 	"context"
 	"fmt"
 
-	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"
 	"k8s.io/kubernetes/test/e2e/framework"
+
+	frameworkutil "github.com/carlory/ai-conformance/e2e/util/framework"
 )
 
-var _ = ginkgo.Describe("Accelerator Metrics", func() {
+var _ = WGDescribe("Accelerator Metrics", func() {
 	f := framework.NewDefaultFramework("accelerator-metrics")
 	f.SkipNamespaceCreation = true
 
@@ -23,7 +24,7 @@ var _ = ginkgo.Describe("Accelerator Metrics", func() {
 		underlying hardware or virtualization layer makes them available. The list of metrics should align with emerging standards,
 		such as OpenTelemetry metrics, to ensure interoperability. The platform may provide a managed solution, but this is not required for conformance.
 	*/
-	framework.ConformanceIt("should support accelerator metrics", func(ctx context.Context) {
+	frameworkutil.AIConformanceIt("should support accelerator metrics", func(ctx context.Context) {
 		jobName := "nvidia-dcgm-exporter"
 
 		queryString := fmt.Sprintf(`count by (__name__) ({job="%s"})`, jobName)
