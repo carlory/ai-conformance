@@ -3,12 +3,8 @@ name: Running E2E tests for AI Conformance
 on:
   push:
     branches: [ main ]
-    paths:
-      - 'ai-conformance/**'
   pull_request:
     branches: [ main ]
-    paths:
-      - 'ai-conformance/**'
   workflow_dispatch:
 
 jobs:

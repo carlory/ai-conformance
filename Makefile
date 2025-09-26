@@ -83,7 +83,7 @@ ginkgo:
 	@GOBIN=$(PROJECT_DIR)/bin GO111MODULE=on go install github.com/onsi/ginkgo/v2/ginkgo@$(GINKGO_VERSION)
 
 .PHONY: test-e2e
-test-e2e: kind
+test-e2e: ginkgo kind
 	@echo "Running E2E tests for AI Conformance"
 	GINKGO=$(GINKGO) E2E_TEST_RUNNER=$(E2E_TEST_RUNNER) USE_EXISTING_CLUSTER=$(USE_EXISTING_CLUSTER) KIND=$(KIND) KIND_CLUSTER_NAME=$(KIND_CLUSTER_NAME) E2E_KIND_NODE_VERSION=$(E2E_KIND_NODE_VERSION) IMG=$(IMG) KUBECTL=$(KUBECTL) HELM=$(HELM) JQ=$(JQ) ./hack/e2e-test.sh
 
@@ -122,6 +122,6 @@ hydrophone:
 
 # FIXME: Migrate the current implementation to ginkgo in order to support other Hydrophone features.
 .PHONY: test-hydrophone 
-test-hydrophone: hydrophone # kind-image-build ## Run E2E tests for AI Conformance via Hydrophone
+test-hydrophone: hydrophone kind-image-build ## Run E2E tests for AI Conformance via Hydrophone
 	@echo "Running E2E tests for AI Conformance via Hydrophone"
 	E2E_TEST_RUNNER="hydrophone" USE_EXISTING_CLUSTER=$(USE_EXISTING_CLUSTER) KIND=$(KIND) KIND_CLUSTER_NAME=$(KIND_CLUSTER_NAME) E2E_KIND_NODE_VERSION=$(E2E_KIND_NODE_VERSION) IMG=$(IMG) KUBECTL=$(KUBECTL) HELM=$(HELM) HYDROPHONE=$(HYDROPHONE) JQ=$(JQ) E2E_RESULTS_DIR=$(E2E_RESULTS_DIR) ./hack/e2e-test.sh

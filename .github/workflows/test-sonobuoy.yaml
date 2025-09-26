@@ -7,8 +7,6 @@ on:
       - 'ai-conformance/**'
   pull_request:
     branches: [ main ]
-    paths:
-      - 'ai-conformance/**'
   workflow_dispatch:
 
 jobs:
