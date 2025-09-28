@@ -14,6 +14,22 @@ This project builds upon the Kubernetes e2e testing framework (v1.34.0) and adds
 - **Containerized Testing**: Docker-based test execution with pre-built images
 - **Flexible Configuration**: Configurable test focus, skip patterns, and execution parameters
 
+## Test Flags added by this project
+
+```
+Go test flags
+  -ai.operator.chart string
+    	chart name where to locate the requested chart
+  -ai.operator.filename string
+    	filename, directory, or URL to files to use to install the operator
+  -ai.operator.namespace string
+    	namespace scope for this request. If unspecified, a random namespace will be used
+  -ai.operator.releaseName string
+    	release name to create with this request. If unspecified, a random release name will be used
+  -ai.operator.repo string
+    	chart repository url where to locate the requested chart
+```
+
 ## Quick Start
 
 ### Using Hydrophone

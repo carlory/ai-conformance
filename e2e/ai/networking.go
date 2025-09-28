@@ -4,14 +4,13 @@ import (
 	"context"
 
 	"github.com/onsi/gomega"
-	"github.com/onsi/gomega/gstruct"
-	apiextv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apiextclientset "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/kubernetes/test/e2e/framework"
 
 	frameworkutil "github.com/carlory/ai-conformance/e2e/util/framework"
+	e2ecrd "github.com/carlory/ai-conformance/e2e/util/framework/crd"
 )
 
 var _ = WGDescribe("AI Inference", func() {
@@ -21,9 +20,9 @@ var _ = WGDescribe("AI Inference", func() {
 	/*
 		Release: v1.34
 		Testname: Kubernetes Gateway API Support
-		Description: Support the Kubernetes Gateway API with an implementation for advanced traffic management
-		for inference services, which enables capabilities like weighted traffic splitting, header-based routing
-		(for OpenAI protocol headers), and optional integration with service meshes.
+		Description: Kubernetes Gateway API MUST be installed, including gatewayclasses, gateways, httproutes, grpcroutes,
+		and referencegrants in the gateways.networking.k8s.io group. And these CRDs MUST have NamesAccepted and Established
+		conditions with True status.
 	*/
 	frameworkutil.AIConformanceIt("gateway crds should be available", func(ctx context.Context) {
 		apiExtensionClient, err := apiextclientset.NewForConfig(f.ClientConfig())
@@ -46,20 +45,8 @@ var _ = WGDescribe("AI Inference", func() {
 			}
 			foundCrds.Insert(crd.Name)
 			// Check if the CRD has accepted and established conditions which means Gateway APIs is ready to use
-			gomega.Expect(crd.Status.Conditions).To(gstruct.MatchElements(
-				func(condition any) string {
-					return string(condition.(apiextv1.CustomResourceDefinitionCondition).Type)
-				},
-				gstruct.IgnoreExtras,
-				gstruct.Elements{
-					"NamesAccepted": gstruct.MatchFields(gstruct.IgnoreExtras, gstruct.Fields{
-						"Status": gomega.Equal(apiextv1.ConditionTrue),
-					}),
-					"Established": gstruct.MatchFields(gstruct.IgnoreExtras, gstruct.Fields{
-						"Status": gomega.Equal(apiextv1.ConditionTrue),
-					}),
-				},
-			))
+			err = e2ecrd.WaitForCrdEstablishedAndNamesAccepted(ctx, apiExtensionClient, crd.GetName())
+			framework.ExpectNoError(err, "error when waiting for CRD %s to be established and names accepted", crd.GetName())
 		}
 		gomega.Expect(foundCrds).To(gomega.Equal(expectedCrds), "missing gateway crds: %v", sets.List(expectedCrds.Difference(foundCrds)))
 	})

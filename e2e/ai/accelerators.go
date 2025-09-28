@@ -15,8 +15,8 @@ var _ = WGDescribe("DRA Support", func() {
 
 	/*
 		Release: v1.34
-		Testname: Dynamic Resource Allocation (DRA) API Group
-		Description: Support Dynamic Resource Allocation (DRA) APIs to enable more flexible and fine-grained resource requests beyond simple counts.
+		Testname: Dynamic Resource Allocation (DRA) API Available
+		Description: The resources.k8s.io/v1 API group MUST be served by the API server.
 	*/
 	frameworkutil.AIConformanceIt("should support DRA", func(ctx context.Context) {
 		resources, err := f.ClientSet.Discovery().ServerResourcesForGroupVersion("resource.k8s.io/v1")

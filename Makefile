@@ -32,6 +32,9 @@ GINKGO_VERSION ?= v2.22.1
 GINKGO_FOCUS ?= \[AIConformance\]
 GINKGO_SKIP ?= \[Disruptive\]|NoExecuteTaintManager
 E2E_RESULTS_DIR ?= /tmp/results
+# Additional parameters to be provided to the conformance container. These parameters should be specified as key-value pairs, separated by commas.
+# Each parameter should start with -- (e.g., --clean-start=true,--allowed-not-ready-nodes=2)
+E2E_EXTRA_ARGS ?="--ai.operator.chart=kuberay-operator,--ai.operator.repo=https://ray-project.github.io/kuberay-helm/"
 # Sonobuoy E2E variables
 SONOBUOY_PLUGIN_FILE ?= $(PROJECT_DIR)/sonobuoy-plugin.yaml
 SONOBUOY_VERSION ?= v0.57.3
@@ -85,7 +88,7 @@ ginkgo:
 .PHONY: test-e2e
 test-e2e: ginkgo kind
 	@echo "Running E2E tests for AI Conformance"
-	GINKGO=$(GINKGO) GINKGO_FOCUS="$(GINKGO_FOCUS)" GINKGO_SKIP="$(GINKGO_SKIP)" E2E_TEST_RUNNER=$(E2E_TEST_RUNNER) USE_EXISTING_CLUSTER=$(USE_EXISTING_CLUSTER) KIND=$(KIND) KIND_CLUSTER_NAME=$(KIND_CLUSTER_NAME) E2E_KIND_NODE_VERSION=$(E2E_KIND_NODE_VERSION) IMG=$(IMG) KUBECTL=$(KUBECTL) HELM=$(HELM) ./hack/e2e-test.sh
+	E2E_EXTRA_ARGS="$(E2E_EXTRA_ARGS)" GINKGO=$(GINKGO) GINKGO_FOCUS="$(GINKGO_FOCUS)" GINKGO_SKIP="$(GINKGO_SKIP)" E2E_TEST_RUNNER=$(E2E_TEST_RUNNER) USE_EXISTING_CLUSTER=$(USE_EXISTING_CLUSTER) KIND=$(KIND) KIND_CLUSTER_NAME=$(KIND_CLUSTER_NAME) E2E_KIND_NODE_VERSION=$(E2E_KIND_NODE_VERSION) IMG=$(IMG) KUBECTL=$(KUBECTL) HELM=$(HELM) ./hack/e2e-test.sh
 
 
 SONOBUOY = $(shell pwd)/bin/sonobuoy
@@ -97,16 +100,21 @@ sonobuoy:
 .PHONY: generate-plugin
 generate-plugin:  sonobuoy ## Generate the Sonobuoy plugin yaml file
 	@echo "Generating Sonobuoy plugin yaml file"
-	@$(SONOBUOY) gen plugin --name ai-conformance \
+	@PLUGIN_EXTRA_ARGS="--progress-report-url=http://localhost:8099/progress"; \
+	if [ -n "$(E2E_EXTRA_ARGS)" ]; then \
+		E2E_ARGS_SPACED=$$(echo "$(E2E_EXTRA_ARGS)" | sed 's/,/ /g'); \
+		PLUGIN_EXTRA_ARGS="$$PLUGIN_EXTRA_ARGS $$E2E_ARGS_SPACED"; \
+	fi; \
+	$(SONOBUOY) gen plugin --name ai-conformance \
 		--type Job \
 		--format junit \
 		--url https://raw.githubusercontent.com/carlory/sonobuoy-plugins/master/ai-conformance/plugin.yaml \
 		--description "Running E2E tests for AI Conformance via Sonobuoy to answer the self-certification questionnaire template in https://github.com/cncf/ai-conformance." \
-		--env "E2E_EXTRA_ARGS=--progress-report-url=http://localhost:8099/progress" \
+		--env "E2E_EXTRA_ARGS=$$PLUGIN_EXTRA_ARGS" \
 		--env "E2E_FOCUS=$(GINKGO_FOCUS)" \
-		--env "E2E_PARALLEL=\"false\"" \
+		--env "E2E_PARALLEL=false" \
 		--env "E2E_SKIP=$(GINKGO_SKIP)" \
-		--env "E2E_USE_GO_RUNNER=\"true\"" \
+		--env "E2E_USE_GO_RUNNER=true" \
 		--env "RESULTS_DIR=/tmp/sonobuoy/results" \
 		--cmd "kubeconformance" \
 		--node-selector "kubernetes.io/os=linux" \
@@ -128,4 +136,4 @@ hydrophone:
 .PHONY: test-hydrophone 
 test-hydrophone: hydrophone kind-image-build ## Run E2E tests for AI Conformance via Hydrophone
 	@echo "Running E2E tests for AI Conformance via Hydrophone"
-	E2E_TEST_RUNNER="hydrophone" GINKGO_FOCUS="$(GINKGO_FOCUS)" GINKGO_SKIP="$(GINKGO_SKIP)" USE_EXISTING_CLUSTER=$(USE_EXISTING_CLUSTER) KIND=$(KIND) KIND_CLUSTER_NAME=$(KIND_CLUSTER_NAME) E2E_KIND_NODE_VERSION=$(E2E_KIND_NODE_VERSION) IMG=$(IMG) KUBECTL=$(KUBECTL) HELM=$(HELM) HYDROPHONE=$(HYDROPHONE) E2E_RESULTS_DIR=$(E2E_RESULTS_DIR) ./hack/e2e-test.sh
+	E2E_TEST_RUNNER="hydrophone" E2E_EXTRA_ARGS="$(E2E_EXTRA_ARGS)" GINKGO_FOCUS="$(GINKGO_FOCUS)" GINKGO_SKIP="$(GINKGO_SKIP)" USE_EXISTING_CLUSTER=$(USE_EXISTING_CLUSTER) KIND=$(KIND) KIND_CLUSTER_NAME=$(KIND_CLUSTER_NAME) E2E_KIND_NODE_VERSION=$(E2E_KIND_NODE_VERSION) IMG=$(IMG) KUBECTL=$(KUBECTL) HELM=$(HELM) HYDROPHONE=$(HYDROPHONE) E2E_RESULTS_DIR=$(E2E_RESULTS_DIR) ./hack/e2e-test.sh

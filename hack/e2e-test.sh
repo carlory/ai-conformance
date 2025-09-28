@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+PS4='+ [${BASH_SOURCE}:${LINENO}] '
+set -x
 set -o errexit
 set -o nounset
 set -o pipefail
@@ -19,6 +21,7 @@ function startup {
     if [ "$USE_EXISTING_CLUSTER" == 'false' ]
     then
         $KIND create cluster --name "$KIND_CLUSTER_NAME" --image "$E2E_KIND_NODE_VERSION" --config ./hack/kind-config.yaml
+        install_dependencies
     fi
 }
 function kind_load {
@@ -83,7 +86,19 @@ EOF
 }
 function run_e2e_tests {
     echo "Starting E2E tests"
-    ARTIFACTS="$SCRIPT_DIR/../" $GINKGO -v --procs=1 --focus="$GINKGO_FOCUS" --skip="$GINKGO_SKIP" "$SCRIPT_DIR/../e2e" -- --kubeconfig "$HOME/.kube/config"
+    
+    # Parse comma-separated E2E_EXTRA_ARGS into an array and convert to proper args
+    local extra_args=()
+    if [ -n "$E2E_EXTRA_ARGS" ]; then
+        IFS=',' read -ra ARGS_ARRAY <<< "$E2E_EXTRA_ARGS"
+        for arg in "${ARGS_ARRAY[@]}"; do
+            # Trim whitespace and add to array
+            extra_args+=("$(echo "$arg" | xargs)")
+        done
+    fi
+    
+    # Run ginkgo with parsed extra args
+    "$GINKGO" -v --procs=1 --focus="$GINKGO_FOCUS" --skip="$GINKGO_SKIP" "$SCRIPT_DIR/../e2e" -- --kubeconfig "$HOME/.kube/config" "${extra_args[@]}"
     echo "Finished E2E tests"
 }
 function run_sonobuoy {
@@ -109,7 +124,8 @@ function run_hydrophone {
         kind_load
     fi
     mkdir -p "$E2E_RESULTS_DIR"
-    $HYDROPHONE --conformance-image "$IMG" --focus="$GINKGO_FOCUS" --skip="$GINKGO_SKIP" --output-dir "$E2E_RESULTS_DIR"
+    
+    $HYDROPHONE --conformance-image "$IMG" --focus="$GINKGO_FOCUS" --skip="$GINKGO_SKIP" --output-dir "$E2E_RESULTS_DIR" --extra-args="$E2E_EXTRA_ARGS"
 }
 function run {
     case "$E2E_TEST_RUNNER" in
@@ -131,5 +147,4 @@ function run {
 
 trap cleanup EXIT
 startup
-install_dependencies
 run

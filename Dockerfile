@@ -24,5 +24,8 @@ RUN curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | b
 FROM ${BASE_IMAGE}
 COPY --from=builder /workspace/e2e.test /usr/local/bin/
 COPY --from=builder /usr/local/bin/helm /usr/local/bin/
-ENV RESULTS_DIR="/tmp/results"
-ENV ARTIFACTS="/tmp/results"
+
+ENV HELM_CACHE_HOME="/tmp"
+ENV HELM_CONFIG_HOME="/tmp"
+ENV HELM_DATA_HOME="/tmp"
+RUN apt-get update && apt-get install -y ca-certificates && update-ca-certificates
