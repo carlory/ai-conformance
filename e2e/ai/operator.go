@@ -17,6 +17,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/cli-runtime/pkg/resource"
 	clientset "k8s.io/client-go/kubernetes"
+	admissionapi "k8s.io/pod-security-admission/api"
 
 	"k8s.io/kubernetes/test/e2e/framework"
 	e2econfig "k8s.io/kubernetes/test/e2e/framework/config"
@@ -39,6 +40,7 @@ var _ = e2econfig.AddOptions(&operator, "ai.operator")
 
 var _ = WGDescribe("Robust Controller", func() {
 	f := framework.NewDefaultFramework("robust-controller")
+	f.NamespacePodSecurityLevel = admissionapi.LevelPrivileged
 
 	/*
 		Release: v1.34

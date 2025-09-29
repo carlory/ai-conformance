@@ -35,6 +35,11 @@ require (
 )
 
 require (
+	github.com/samber/lo v1.51.0
+	k8s.io/cli-runtime v0.34.0
+)
+
+require (
 	cel.dev/expr v0.24.0 // indirect
 	github.com/Azure/go-ansiterm v0.0.0-20230124172434-306776ec8161 // indirect
 	github.com/JeffAshton/win_pdh v0.0.0-20161109143554-76bb4ee9f0ab // indirect
@@ -167,7 +172,6 @@ require (
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	k8s.io/cli-runtime v0.34.0 // indirect
 	k8s.io/cloud-provider v0.34.0 // indirect
 	k8s.io/kube-openapi v0.0.0-20250710124328-f3f2b991d03b // indirect
 	sigs.k8s.io/apiserver-network-proxy/konnectivity-client v0.31.2 // indirect
