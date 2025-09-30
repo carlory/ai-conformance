@@ -11,13 +11,38 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	aggregatorclient "k8s.io/kube-aggregator/pkg/client/clientset_generated/clientset"
 	admissionapi "k8s.io/pod-security-admission/api"
 
 	"k8s.io/kubernetes/test/e2e/framework"
 	e2epod "k8s.io/kubernetes/test/e2e/framework/pod"
+	e2eskipper "k8s.io/kubernetes/test/e2e/framework/skipper"
 
 	frameworkutil "github.com/carlory/ai-conformance/e2e/util/framework"
 )
+
+var _ = WGDescribe("Gang Scheduling", func() {
+	f := framework.NewDefaultFramework("gang-autoscaling")
+	f.NamespacePodSecurityLevel = admissionapi.LevelRestricted
+
+	framework.Context("kueue", func() {
+		ginkgo.BeforeEach(func(ctx context.Context) {
+			frameworkutil.SkipIfGroupVersionUnavaliable(ctx, f.ClientSet.Discovery(), "kueue.x-k8s.io/v1beta1")
+		})
+
+		/*
+			Release: v1.34
+			Testname: Gang Scheduling with Kueue and Job workload
+			Description: Create two jobs with the same template and each replica requests 1 Nvidia GPU. Also, pay attention
+			to configure the parallelism and completions to be the same as the jobSize, which is 80% of the total avaliable GPUs
+			per job. In this scenario there is not enough resources to run all pods for both jobs at the same time, but all jobs
+			MUST be scheduled and succeed eventually.
+		*/
+		frameworkutil.AIConformanceIt("2 jobs should be scheduled and succeed one by one when there are not enough resources", func(ctx context.Context) {
+			// TODO: implement this test
+		})
+	})
+})
 
 var _ = WGDescribe("Cluster Autoscaling", func() {
 	f := framework.NewDefaultFramework("cluster-autoscaling")
@@ -94,5 +119,34 @@ var _ = WGDescribe("Cluster Autoscaling", func() {
 			return node, err
 		})).WithTimeout(15 * time.Minute).Should(gomega.BeNil())
 		framework.ExpectNoError(err, "error when waiting for the node %s to be reclaimed", nodeName)
+	})
+})
+
+var _ = WGDescribe("Pod Autoscaling", func() {
+	f := framework.NewDefaultFramework("pod-autoscaling")
+	f.NamespacePodSecurityLevel = admissionapi.LevelRestricted
+
+	ginkgo.BeforeEach(func(ctx context.Context) {
+		aggrclient, err := aggregatorclient.NewForConfig(f.ClientConfig())
+		framework.ExpectNoError(err, "error when creating aggregator client")
+		_, err = aggrclient.ApiregistrationV1().APIServices().Get(ctx, "v1beta1.custom.metrics.k8s.io", metav1.GetOptions{})
+		if err != nil {
+			if apierrors.IsNotFound(err) {
+				e2eskipper.Skipf("The APIService v1beta1.custom.metrics.k8s.io does not exist")
+			}
+			framework.Failf("error when getting APIService v1beta1.custom.metrics.k8s.io: %v", err)
+		}
+	})
+
+	/*
+		Release: v1.34
+		Testname: Pod Autoscaling
+		Description: Create a Deployment with each Pod requests an accelerator and exposes a custom metric.
+		Create an HorizontalPodAutoscaler targeting the Deployment. Introduce load to the sample application,
+		causing the average custom metric value to significantly exceed the target, triggering a scale up.
+		Then remove the load to trigger a scale down.
+	*/
+	frameworkutil.AIConformanceIt("should scale up and down the workload based on the custom metrics", func(ctx context.Context) {
+		// TODO: implement this test
 	})
 })

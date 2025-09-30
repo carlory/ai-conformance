@@ -4,9 +4,12 @@ import (
 	"context"
 	"maps"
 
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/discovery"
 	clientset "k8s.io/client-go/kubernetes"
 
+	"k8s.io/kubernetes/test/e2e/framework"
 	e2eskipper "k8s.io/kubernetes/test/e2e/framework/skipper"
 )
 
@@ -31,4 +34,16 @@ func SkipUnlessClusterAutoscalerExists(ctx context.Context, client clientset.Int
 		}
 	}
 	e2eskipper.Skipf("no cluster autoscaler has been installed: %v", maps.Keys(autoscalers))
+}
+
+// SkipIfGroupVersionUnavaliable skips the test if the group version is not found.
+func SkipIfGroupVersionUnavaliable(ctx context.Context, discoveryClient discovery.DiscoveryInterface, groupVersion string) {
+	_, err := discoveryClient.ServerResourcesForGroupVersion(groupVersion)
+	if err != nil {
+		if apierrors.IsNotFound(err) {
+			e2eskipper.Skipf("%s is not found", groupVersion)
+			return
+		}
+		framework.Failf("failed to get resources in %s: %v", groupVersion, err)
+	}
 }

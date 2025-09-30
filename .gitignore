@@ -29,7 +29,7 @@ go.work.sum
 .env
 
 # tmp files
-results/
+__output/
 junit_*.xml
 e2e.log
 
