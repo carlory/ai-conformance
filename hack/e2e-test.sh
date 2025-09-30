@@ -15,12 +15,11 @@ function cleanup {
     then
         $KIND delete cluster --name "$KIND_CLUSTER_NAME"
     fi
-    # TODO: revert all the changes made to this repo
 }
 function startup {
     if [ "$USE_EXISTING_CLUSTER" == 'false' ]
     then
-        $KIND create cluster --name "$KIND_CLUSTER_NAME" --image "$E2E_KIND_NODE_VERSION" --config ./hack/kind-config.yaml
+        $KIND create cluster --name "$KIND_CLUSTER_NAME" --image "$E2E_KIND_NODE_VERSION" --config "$SCRIPT_DIR/kind-config.yaml"
         install_dependencies
     fi
 }
@@ -144,7 +143,6 @@ function run {
             ;;
     esac
 }
-
 trap cleanup EXIT
 startup
 run

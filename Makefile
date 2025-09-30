@@ -34,7 +34,7 @@ GINKGO_SKIP ?= \[Disruptive\]|NoExecuteTaintManager
 E2E_RESULTS_DIR ?= /tmp/results
 # Additional parameters to be provided to the conformance container. These parameters should be specified as key-value pairs, separated by commas.
 # Each parameter should start with -- (e.g., --clean-start=true,--allowed-not-ready-nodes=2)
-E2E_EXTRA_ARGS ?="--ai.operator.chart=kuberay-operator,--ai.operator.repo=https://ray-project.github.io/kuberay-helm/"
+E2E_EXTRA_ARGS ?="--ai.operator.chart=kuberay-operator,--ai.operator.repo=https://ray-project.github.io/kuberay-helm/,--ai.podAutoscaling.metricName=vllm:num_requests_running"
 # Sonobuoy E2E variables
 SONOBUOY_PLUGIN_FILE ?= $(PROJECT_DIR)/sonobuoy-plugin.yaml
 SONOBUOY_VERSION ?= v0.57.3
