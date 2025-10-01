@@ -98,8 +98,6 @@ var _ = WGDescribe("Accelerator Metrics", func() {
 	})
 })
 
-// Provide a monitoring system capable of discovering and collecting metrics from workloads that expose them in a standard format
-// (e.g. Prometheus exposition format). This ensures easy integration for collecting key metrics from common AI frameworks and servers.
 var _ = WGDescribe("AI Service Metrics", func() {
 	f := framework.NewDefaultFramework("ai-service-metrics")
 	f.NamespacePodSecurityLevel = admissionapi.LevelBaseline
