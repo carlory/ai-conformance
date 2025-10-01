@@ -30,7 +30,7 @@ var _ = WGDescribe("Accelerator Metrics", func() {
 
 	framework.Context("nvidia gpu", func() {
 		ginkgo.BeforeEach(func(ctx context.Context) {
-			nodes, err := e2enode.GetReadySchedulableNodes(ctx, f.ClientSet)
+			nodes, err := e2enode.GetReadyNodesIncludingTainted(ctx, f.ClientSet)
 			framework.ExpectNoError(err)
 
 			capacity := 0
