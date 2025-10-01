@@ -9,7 +9,6 @@ import (
 	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"
 	monitoring "github.com/prometheus-operator/prometheus-operator/pkg/client/versioned"
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	e2eservice "k8s.io/kubernetes/test/e2e/framework/service"
 	admissionapi "k8s.io/pod-security-admission/api"
@@ -27,9 +26,9 @@ import (
 var _ = WGDescribe("Accelerator Metrics", func() {
 	f := framework.NewDefaultFramework("accelerator-metrics")
 	f.SkipNamespaceCreation = true
+	const timeToWait = 15 * time.Minute
 
 	framework.Context("nvidia gpu", func() {
-		gpuNodes := []corev1.Node{}
 		ginkgo.BeforeEach(func(ctx context.Context) {
 			nodes, err := e2enode.GetReadySchedulableNodes(ctx, f.ClientSet)
 			framework.ExpectNoError(err)
@@ -47,7 +46,6 @@ var _ = WGDescribe("Accelerator Metrics", func() {
 					continue
 				}
 				allocatable += int(val.Value())
-				gpuNodes = append(gpuNodes, node)
 			}
 
 			if capacity == 0 {
@@ -61,10 +59,41 @@ var _ = WGDescribe("Accelerator Metrics", func() {
 		/*
 			Release: v1.34
 			Testname: Nvidia GPU Metrics
-			Description: Verify that accelerator metrics MUST be collected from the GPU node.
+			Description: Query the prometheus and verify that the gpu deivce metrics MUST be collected.
 		*/
 		frameworkutil.AIConformanceIt("metrics should be collected from the GPU node", func(ctx context.Context) {
-			// TODO: implement this test
+			ginkgo.By("Getting the Prometheus instance")
+			promOpClient, err := monitoring.NewForConfig(f.ClientConfig())
+			framework.ExpectNoError(err, "error when creating prometheus operator client")
+			promList, err := promOpClient.MonitoringV1().Prometheuses(metav1.NamespaceAll).List(ctx, metav1.ListOptions{})
+			framework.ExpectNoError(err, "error when getting Prometheus list")
+			gomega.Expect(promList.Items).ToNot(gomega.BeEmpty(), "at least one Prometheus should be found")
+			prom := promList.Items[0]
+
+			ginkgo.By("Query the prometheus and verify that the metrics are collected")
+			metricNamePrefix := "DCGM_FI_DEV"
+			query := fmt.Sprintf(`count by (__name__) ({__name__=~"^%s.*"})`, metricNamePrefix)
+			err = framework.Gomega().Eventually(ctx, func(ctx context.Context) error {
+				proxyRequest, err := e2eservice.GetServicesProxyRequest(f.ClientSet, f.ClientSet.CoreV1().RESTClient().Get())
+				if err != nil {
+					return err
+				}
+				req := proxyRequest.Namespace(prom.Namespace).
+					Name(fmt.Sprintf("%s:http-web", prom.Name)).
+					Suffix("/api/v1/query").
+					Param("query", query)
+				framework.Logf("Query URL: %v", *req.URL())
+				data, err := req.DoRaw(ctx)
+				if err != nil {
+					return err
+				}
+				framework.Logf("Query result: %s", string(data))
+				if !strings.Contains(string(data), metricNamePrefix) {
+					return fmt.Errorf("metrics with prefix %q not found: %s", metricNamePrefix, string(data))
+				}
+				return nil
+			}).WithTimeout(timeToWait).WithPolling(15 * time.Second).Should(gomega.Succeed())
+			framework.ExpectNoError(err, "error when waiting for the metrics to be collected")
 		})
 	})
 })
