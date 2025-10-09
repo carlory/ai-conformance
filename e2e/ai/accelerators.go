@@ -17,7 +17,7 @@ var _ = WGDescribe("DRA Support", func() {
 	f.SkipNamespaceCreation = true
 
 	ginkgo.BeforeEach(func(ctx context.Context) {
-		e2eskipper.SkipUnlessServerVersionGTE(utilversion.MustParseSemantic("v1.33"), f.ClientSet.Discovery())
+		e2eskipper.SkipUnlessServerVersionGTE(utilversion.MustParseSemantic("v1.34.0"), f.ClientSet.Discovery())
 	})
 
 	/*
