@@ -18,7 +18,7 @@ var _ = WGDescribe("AI Inference", func() {
 	f.SkipNamespaceCreation = true
 
 	/*
-		Release: v1.34
+		Release: v1.33
 		Testname: Kubernetes Gateway API Support
 		Description: Kubernetes Gateway API MUST be installed, including gatewayclasses, gateways, httproutes, grpcroutes,
 		and referencegrants in the gateways.networking.k8s.io group. And these CRDs MUST have NamesAccepted and Established

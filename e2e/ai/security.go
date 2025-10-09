@@ -4,20 +4,151 @@ import (
 	"context"
 
 	"github.com/onsi/ginkgo/v2"
+	"github.com/onsi/gomega"
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	admissionapi "k8s.io/pod-security-admission/api"
 
 	drautils "k8s.io/kubernetes/test/e2e/dra/utils"
 	"k8s.io/kubernetes/test/e2e/framework"
+	e2egpu "k8s.io/kubernetes/test/e2e/framework/gpu"
+	e2enode "k8s.io/kubernetes/test/e2e/framework/node"
 	e2epod "k8s.io/kubernetes/test/e2e/framework/pod"
+	e2eskipper "k8s.io/kubernetes/test/e2e/framework/skipper"
 
 	frameworkutil "github.com/carlory/ai-conformance/e2e/util/framework"
 )
+
+var _ = WGDescribe("Secure Accelerator Access", func() {
+	f := framework.NewDefaultFramework("device-plugin")
+	f.NamespacePodSecurityLevel = admissionapi.LevelPrivileged
+
+	var selectedNode *v1.Node
+	var ns string
+
+	f.Context("nvidia device plugin", func() {
+		ginkgo.BeforeEach(func(ctx context.Context) {
+			nodes, err := e2enode.GetReadyNodesIncludingTainted(ctx, f.ClientSet)
+			framework.ExpectNoError(err)
+
+			for _, node := range nodes.Items {
+				capacity, ok := node.Status.Capacity[e2egpu.NVIDIAGPUResourceName]
+				if !ok {
+					continue
+				}
+				if capacity.Value() < 2 {
+					continue
+				}
+				allocatable, ok := node.Status.Allocatable[e2egpu.NVIDIAGPUResourceName]
+				if !ok {
+					continue
+				}
+				if allocatable.Value() < 2 {
+					continue
+				}
+				selectedNode = &node
+				break
+			}
+
+			if selectedNode == nil {
+				e2eskipper.Skipf("%d ready nodes do not have at least 2 Nvidia GPU(s) on the same node. Skipping...", len(nodes.Items))
+			}
+			ns = f.Namespace.Name
+		})
+
+		/*
+			Release: v1.33
+			Testname: Secure Accelerator Access, device plugin
+			Description: If a Pod does not request any device, it MUST not be able to access any devices.
+		*/
+		frameworkutil.AIConformanceIt("can not access devices if a pod don't request them", func(ctx context.Context) {
+			pod := e2epod.MakePod(ns, nil, nil, f.NamespacePodSecurityLevel, "")
+			pod.Spec.NodeName = selectedNode.Name
+			pod.Spec.Tolerations = []v1.Toleration{
+				{
+					Effect:   v1.TaintEffectNoSchedule,
+					Operator: v1.TolerationOpExists,
+				},
+			}
+			pod.Spec.Containers[0].Env = []v1.EnvVar{
+				{
+					Name: "NODE_NAME",
+					ValueFrom: &v1.EnvVarSource{
+						FieldRef: &v1.ObjectFieldSelector{
+							FieldPath: "spec.nodeName",
+						},
+					},
+				},
+			}
+			pod, err := f.ClientSet.CoreV1().Pods(ns).Create(ctx, pod, metav1.CreateOptions{})
+			framework.ExpectNoError(err, "error when creating pod")
+			ginkgo.DeferCleanup(f.ClientSet.CoreV1().Pods(ns).Delete, pod.Name, metav1.DeleteOptions{})
+			err = e2epod.WaitForPodRunningInNamespace(ctx, f.ClientSet, pod)
+			framework.ExpectNoError(err, "error when waiting for pod to be running")
+			err = e2epod.VerifyExecInPodFail(ctx, f, pod, "nvidia-smi", 127)
+			framework.ExpectNoError(err, "nvidia-smi should fail with exit code 127")
+		})
+
+		/*
+			Release: v1.33
+			Testname: Secure Accelerator Access, device plugin
+			Description: Create two pods with 1 Nvidia GPU request per each pod and verify that the devices MUST be mapped to the right pods.
+			And the devices MUST be different.
+		*/
+		frameworkutil.AIConformanceIt("must map devices to the right pods", func(ctx context.Context) {
+			pod := e2epod.MakePod(ns, nil, nil, f.NamespacePodSecurityLevel, "")
+			pod.Spec.NodeName = selectedNode.Name
+			pod.Spec.Tolerations = []v1.Toleration{
+				{
+					Effect:   v1.TaintEffectNoSchedule,
+					Operator: v1.TolerationOpExists,
+				},
+			}
+			pod.Spec.Containers[0].Resources.Limits = map[v1.ResourceName]resource.Quantity{
+				v1.ResourceName(e2egpu.NVIDIAGPUResourceName): resource.MustParse("1"),
+			}
+			pod.Spec.Containers[0].Env = []v1.EnvVar{
+				{
+					Name: "NODE_NAME",
+					ValueFrom: &v1.EnvVarSource{
+						FieldRef: &v1.ObjectFieldSelector{
+							FieldPath: "spec.nodeName",
+						},
+					},
+				},
+			}
+			// run-ai/fake-gpu-operator don't support multiple containers, so we need to create two pods.
+			pod2 := pod.DeepCopy()
+			pod, err := f.ClientSet.CoreV1().Pods(ns).Create(ctx, pod, metav1.CreateOptions{})
+			framework.ExpectNoError(err, "error when creating pod")
+			ginkgo.DeferCleanup(f.ClientSet.CoreV1().Pods(ns).Delete, pod.Name, metav1.DeleteOptions{})
+			err = e2epod.WaitForPodRunningInNamespace(ctx, f.ClientSet, pod)
+			framework.ExpectNoError(err, "error when waiting for pod to be running")
+			pod2, err = f.ClientSet.CoreV1().Pods(ns).Create(ctx, pod2, metav1.CreateOptions{})
+			framework.ExpectNoError(err, "error when creating pod")
+			ginkgo.DeferCleanup(f.ClientSet.CoreV1().Pods(ns).Delete, pod2.Name, metav1.DeleteOptions{})
+			err = e2epod.WaitForPodRunningInNamespace(ctx, f.ClientSet, pod2)
+			framework.ExpectNoError(err, "error when waiting for pod to be running")
+
+			pod0out := e2epod.ExecShellInPod(ctx, f, pod.Name, "nvidia-smi -L")
+			pod1out := e2epod.ExecShellInPod(ctx, f, pod2.Name, "nvidia-smi -L")
+			framework.Logf("pod %s output:\n %s", pod.Name, pod0out)
+			framework.Logf("pod %s output:\n %s", pod2.Name, pod1out)
+			gomega.Expect(pod0out).NotTo(gomega.Equal(pod1out), "should have different devices assigned")
+
+		})
+	})
+})
 
 // https://github.com/kubernetes-sigs/wg-ai-conformance/issues/27#issuecomment-3356364245
 // Remove it once the test is included in k/k conformance tests.
 var _ = WGDescribe("Secure Accelerator Access", func() {
 	f := framework.NewDefaultFramework("dra")
+
+	ginkgo.BeforeEach(func(ctx context.Context) {
+		frameworkutil.SkipIfGroupVersionUnavaliable(ctx, f.ClientSet.Discovery(), "resource.k8s.io/v1")
+	})
 
 	// The driver containers have to run with sufficient privileges to
 	// modify /var/lib/kubelet/plugins.

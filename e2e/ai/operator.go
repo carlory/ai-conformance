@@ -43,7 +43,7 @@ var _ = WGDescribe("Robust Controller", func() {
 	f.NamespacePodSecurityLevel = admissionapi.LevelPrivileged
 
 	/*
-		Release: v1.34
+		Release: v1.33
 		Testname: Robust Controller
 		Description: Deploy the given operator with filename or helm chart. All the pods of the operator MUST be
 		running. If the operator has webhooks, all the pods of the webhooks MUST be running. The CRDs of the operator

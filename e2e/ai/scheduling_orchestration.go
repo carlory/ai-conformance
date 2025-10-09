@@ -102,7 +102,7 @@ var _ = WGDescribe("Gang Scheduling", func() {
 		})
 
 		/*
-			Release: v1.34
+			Release: v1.33
 			Testname: Gang Scheduling with Kueue and Job workload
 			Description: Create two jobs with the same template and each replica requests 1 Nvidia GPU. Also, pay attention
 			to configure the parallelism and completions to be the same as the jobSize, which is 80% of the total avaliable GPUs
@@ -193,7 +193,7 @@ var _ = WGDescribe("Cluster Autoscaling", func() {
 	})
 
 	/*
-		Release: v1.34
+		Release: v1.33
 		Testname: Cluster Autoscaling
 		Description: Create N pods requesting an accelerator via resource limits until the last one is pending and marked
 		as unschedulable. The cluster autoscaler MUST provision an suitable node for the pending pod. Check the pod status
@@ -288,7 +288,7 @@ var _ = WGDescribe("Pod Autoscaling", func() {
 	})
 
 	/*
-		Release: v1.34
+		Release: v1.33
 		Testname: Pod Autoscaling
 		Description: Create a Deployment and exposes a custom metric via a ServiceMonitor. Create an HorizontalPodAutoscaler
 		targeting the Deployment. Introduce load to the sample application, causing the average custom metric value to

@@ -55,9 +55,12 @@ function install_dependencies {
         --timeout 15m
 
     echo "Installing fake GPU operator"
+    # Use custom image for device plugin to support `nvidia-smi -L` command, see https://github.com/carlory/fake-gpu-operator/commit/d886e8ad8566e03368911b96810eca8c99e10bfc
     $HELM upgrade --install gpu-operator oci://ghcr.io/run-ai/fake-gpu-operator/fake-gpu-operator \
         --version 0.0.63 \
         --namespace gpu-operator \
+        --set devicePlugin.image.repository=ghcr.io/carlory/fake-gpu-operator/device-plugin \
+        --set devicePlugin.image.tag=0.0.63-1 \
         --create-namespace \
         --wait \
         --timeout 15m

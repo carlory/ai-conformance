@@ -57,7 +57,7 @@ var _ = WGDescribe("Accelerator Metrics", func() {
 		})
 
 		/*
-			Release: v1.34
+			Release: v1.33
 			Testname: Nvidia GPU Metrics
 			Description: Query the prometheus and verify that the gpu deivce metrics MUST be collected.
 		*/
@@ -109,7 +109,7 @@ var _ = WGDescribe("AI Service Metrics", func() {
 	})
 
 	/*
-		Release: v1.34
+		Release: v1.33
 		Testname: AI Service Metrics
 		Description: Create a Deployment and exposes a custom metric via a ServiceMonitor. Query the prometheus
 		and verify that the metric MUST be collected.
